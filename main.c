@@ -76,7 +76,7 @@ int player_level = 1;
 struct entity* entity_make(int code, int x, int y) {
     struct entity newEntity = {x, y, code, entity_count};
     entities[entity_count] = newEntity;    entity_count++;
-    retur &entities[entity_count-1];
+    return &entities[entity_count-1];
 };
 
 //DELETES ENTITY FROM GAME
