@@ -1,6 +1,6 @@
-/----------------
-/BAREBONE
-/----------------
+/----------------/
+BAREBONE
+/----------------/
 
 a very simple game engine made in C, it uses the terminal as the display. 
 
@@ -8,9 +8,9 @@ a very simple game engine made in C, it uses the terminal as the display.
 
 
 
-/----------------
-/HOW TO USE?
-/----------------
+/----------------/
+HOW TO USE?
+/----------------/
 
 define the game constants as you wish.
 
