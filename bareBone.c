@@ -58,8 +58,8 @@ struct entity {
 struct entity entities[ENTITY_LIMIT];
 int entity_count = 0;
 char entity_char[ENTITY_SET][4];
-int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT];
 int render_list[LEVEL_WIDTH*LEVEL_HEIGHT];
+int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT];
 
 int player_jump = 0;
 int player_score = 0;
@@ -75,9 +75,8 @@ int player_level = 1;
 //ADDS ENTITY TO GAME
 struct entity* entity_make(int code, int x, int y) {
     struct entity newEntity = {x, y, code, entity_count};
-    entities[entity_count] = newEntity;
-    entity_count++;
-    return &entities[entity_count-1];
+    entities[entity_count] = newEntity;    entity_count++;
+    retur &entities[entity_count-1];
 };
 
 //DELETES ENTITY FROM GAME
@@ -228,7 +227,7 @@ int entity_update(int id, char input[]) {
     return 0;
 };
 
-//SET ENTITY APPAREANCE HERE
+//SET ENTITY APPEARANCE HERE
 char entity_char[ENTITY_SET][4] = {
     "   ",
     " @ ",
