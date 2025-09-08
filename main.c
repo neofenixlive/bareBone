@@ -18,6 +18,27 @@ UNiX Terminal Game Engine
 #include <fcntl.h>
 
 //--------------------------------
+//RENDER COLORS
+//--------------------------------
+#define BLACK "\x1b[30m"
+#define RED "\x1b[31m"
+#define GREEN "\x1b[32m"
+#define YELLOW "\x1b[33m"
+#define BLUE "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN "\x1b[36m"
+#define WHITE "\x1b[37m"
+#define L_BLACK "\x1b[90m"
+#define L_RED "\x1b[91m"
+#define L_GREEN "\x1b[92m"
+#define L_YELLOW "\x1b[93m"
+#define L_BLUE "\x1b[94m"
+#define L_MAGENTA "\x1b[95m"
+#define L_CYAN "\x1b[96m"
+#define L_WHITE "\x1b[97m"
+#define COLOR_RESET "\x1b[0m" 
+
+//--------------------------------
 //GAME CONSTANTS
 //--------------------------------
 #define ENTITY_LIMIT 200
@@ -25,10 +46,12 @@ UNiX Terminal Game Engine
 #define LEVEL_WIDTH 10
 #define LEVEL_HEIGHT 10
 #define LEVEL_QUANTITY 5
-#define GAME_TITLE "▐               ▗▄▄             \n▐▄▖  ▄▖  ▖▄  ▄▖ ▐  ▌ ▄▖ ▗▗▖  ▄▖ \n▐▘▜ ▝ ▐  ▛ ▘▐▘▐ ▐▄▄▘▐▘▜ ▐▘▐ ▐▘▐ \n▐ ▐ ▗▀▜  ▌  ▐▀▀ ▐  ▌▐ ▐ ▐ ▐ ▐▀▀ \n▐▙▛ ▝▄▜  ▌  ▝▙▞ ▐▄▄▘▝▙▛ ▐ ▐ ▝▙▞ \nUNiX Terminal Game Engine <alpha3>"
+#define GAME_TITLE "▐               ▗▄▄             \n▐▄▖  ▄▖  ▖▄  ▄▖ ▐  ▌ ▄▖ ▗▗▖  ▄▖ \n▐▘▜ ▝ ▐  ▛ ▘▐▘▐ ▐▄▄▘▐▘▜ ▐▘▐ ▐▘▐ \n▐ ▐ ▗▀▜  ▌  ▐▀▀ ▐  ▌▐ ▐ ▐ ▐ ▐▀▀ \n▐▙▛ ▝▄▜  ▌  ▝▙▞ ▐▄▄▘▝▙▛ ▐ ▐ ▝▙▞ \nUNiX Terminal Game Engine <alpha_5>"
 #define GAME_INSTRUCTIONS "<,> - Walk left, <.> - Walk right, <;> - Jumps"
+#define GAME_BACKGROUND "\x1b[104m"
 #define GAME_H_BORDER "=-="
 #define GAME_V_BORDER "|x|"
+#define GAME_C_BORDER "\x1b[97m"
 #define GAME_UPDATE_TIME 200000
 #define GAME_LEVEL_START 0
 
@@ -66,7 +89,7 @@ int game_frame = 0;
 char game_input = '\0';
 int game_render[LEVEL_WIDTH*LEVEL_HEIGHT];
 struct entity entities[ENTITY_LIMIT];
-char entity_char[ENTITY_SET][4];
+char entity_char[ENTITY_SET][9];
 int entity_count = 0;
 int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT];
 
@@ -74,9 +97,8 @@ int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT];
 
 int player_score = 0;
 int player_level = 1;
-int player_jump = 0;
-
-
+int player_jumpheight = 0;
+int player_oldscore = 0;
 
 //--------------------------------
 //ENTITY/LEVEL HANDLING
@@ -141,7 +163,8 @@ int level_reset() {
     level_load(GAME_LEVEL_START);
     player_score = 0;
     player_level = 1;
-    player_jump = 0;
+    player_jumpheight = 0;
+    player_oldscore = 0;
 };
 
 
@@ -197,25 +220,27 @@ int entity_update(int id) {
 
         if(game_input == ';') {
             if(collide_y1 == 0 && collide_y2 == 1) {
-                player_jump = 2;
+                player_jumpheight = 2;
             }
         }
-        if(collide_y1 == 0 && player_jump > 0) {
+        if(collide_y1 == 0 && player_jumpheight > 0) {
             entities[id].y -= 1;
         }
-        if(collide_y2 == 0 && player_jump < 1) {
+        if(collide_y2 == 0 && player_jumpheight < 1) {
             entities[id].y += 1;
         }
-        player_jump -= 1;
+        player_jumpheight -= 1;
 
         if(entities[id].x<0 || entities[id].x>LEVEL_WIDTH-1 || entities[id].y>LEVEL_HEIGHT-1){
-            player_jump = 0;
+            player_jumpheight = 0;
+            player_score = player_oldscore;
             level_load(player_level-1);
         }
         
         for(int i=0; i<spike_count; i++) {
             if (spikes[i].x == entities[id].x && spikes[i].y == entities[id].y) {
-                player_jump = 0;
+                player_jumpheight = 0;
+                player_score = player_oldscore;
                 level_load(player_level-1);
             }
         }
@@ -230,7 +255,8 @@ int entity_update(int id) {
         for(int i=0; i<flag_count; i++) {
             if (flags[i].x == entities[id].x && flags[i].y == entities[id].y) {
                 player_level += 1;
-                player_jump = 0;
+                player_jumpheight = 0;
+                player_oldscore = player_score;
                 level_load(player_level-1);
             }
         }
@@ -248,13 +274,13 @@ int entity_update(int id) {
 };
 
 //SET ENTITY APPEARANCE HERE
-char entity_char[ENTITY_SET][4] = {
+char entity_char[ENTITY_SET][9] = {
     "   ",
-    " @ ",
-    "[ ]",
-    "< >",
-    " * ",
-    " # "
+    RED " @ ",
+    GREEN "[~]",
+    L_BLACK "<!>",
+    YELLOW " * ",
+    L_GREEN " # "
 };
 
 //SET LEVELS HERE
@@ -266,9 +292,9 @@ int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 4, 0, 5,
         0, 0, 0, 0, 0, 4, 0, 0, 0, 2,
-        0, 0, 0, 4, 0, 0, 0, 2, 0, 0,
-        0, 1, 0, 0, 0, 2, 0, 0, 0, 0,
-        2, 2, 2, 2, 0, 0, 0, 0, 0, 0},
+        0, 0, 0, 4, 0, 0, 0, 2, 0, 2,
+        0, 1, 0, 0, 0, 2, 0, 2, 0, 2,
+        2, 2, 2, 2, 0, 2, 0, 2, 0, 2},
 
     {   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 4, 0, 0, 0, 4, 0, 0, 0,
@@ -285,12 +311,12 @@ int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT] = {
         5, 0, 0, 4, 0, 0, 0, 0, 0, 0,
         2, 2, 2, 2, 0, 0, 4, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 2, 2, 0, 4,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 3, 0, 0, 4, 0, 2,
-        1, 0, 0, 4, 3, 0, 0, 0, 0, 0,
-        2, 0, 3, 4, 0, 0, 0, 2, 0, 0,
-        2, 0, 3, 0, 0, 0, 0, 0, 0, 0,
-        2, 0, 0, 2, 2, 2, 0, 0, 0, 0},
+        0, 0, 0, 0, 3, 0, 0, 0, 0, 0,
+        0, 0, 4, 0, 3, 0, 0, 4, 0, 2,
+        1, 0, 0, 0, 3, 0, 0, 0, 0, 2,
+        2, 0, 3, 0, 0, 4, 0, 2, 0, 2,
+        2, 0, 3, 0, 0, 0, 0, 2, 0, 2,
+        2, 0, 3, 2, 2, 2, 0, 2, 0, 2},
 
     {   0, 0, 0, 0, 0, 0, 4, 0, 0, 0,
         0, 0, 0, 4, 0, 0, 2, 0, 0, 0,
@@ -314,8 +340,6 @@ int levels[LEVEL_QUANTITY][LEVEL_WIDTH*LEVEL_HEIGHT] = {
         0, 0, 4, 3, 0, 4, 0, 3, 0, 1,
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
 };
-
-
 
 //--------------------------------
 //GAME UPDATE/RENDER
@@ -392,23 +416,26 @@ int render_order() {
 
 //PRINT RENDER LIST WITH ENTITY_CHAR
 int render_print() {
+    printf(GAME_BACKGROUND);
     for(int i=0; i<LEVEL_WIDTH+2; i++) {
-        printf("%s", GAME_H_BORDER);
+        printf(GAME_C_BORDER "%s", GAME_H_BORDER);
     }
     printf("\n");
     
     for(int y=0; y<LEVEL_HEIGHT; y++) {
         printf("%s", GAME_V_BORDER);
         for(int x=0; x<LEVEL_WIDTH; x++) {
+            printf(COLOR_RESET GAME_BACKGROUND);
             printf("%s", entity_char[game_render[(y*LEVEL_WIDTH)+x]]);
         }
-        printf("%s\n", GAME_V_BORDER);
+        printf(GAME_C_BORDER "%s\n", GAME_V_BORDER);
     }
     
     for(int i=0; i<LEVEL_WIDTH+2; i++) {
         printf("%s", GAME_H_BORDER);
     }
     printf("\n");
+    printf(COLOR_RESET);
 };
 
 //RENDER TITLE, ENTITIES, INSTRUCTIONS AND MORE
@@ -427,8 +454,6 @@ int render() {
     printf("%s\n", GAME_INSTRUCTIONS);
     return 0;
 };
-
-
 
 //--------------------------------
 //MAIN FUNCTION
