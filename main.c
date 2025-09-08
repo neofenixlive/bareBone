@@ -167,7 +167,6 @@ int level_reset() {
     player_oldscore = 0;
 };
 
-
 //--------------------------------
 //ENTITY/LEVEL SETTINGS
 //--------------------------------
